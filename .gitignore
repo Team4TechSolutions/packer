@@ -23,4 +23,8 @@ Thumbs.db
 *.key
 *.env
 secrets/
+# Environment-specific configs with sensitive data
+*sandbox*.hcl
+*production*.hcl
+*staging*.hcl
 
