@@ -1,0 +1,26 @@
+# Packer
+.packer_cache/
+packer_cache/
+*.log
+manifest.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# Credentials and sensitive data
+*.pem
+*.key
+*.env
+secrets/
+

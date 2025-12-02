@@ -1,0 +1,30 @@
+# JVM Options for Tomcat
+# These options are in addition to those set in setenv.sh
+# Add custom JVM options here as needed
+
+# GC Options (G1GC is set in setenv.sh)
+# -XX:+UseG1GC
+# -XX:MaxGCPauseMillis=200
+
+# Memory options (set in setenv.sh via JAVA_OPTS)
+# -Xmx2g
+# -Xms1g
+
+# Additional JVM options for Spectrum
+# Uncomment and customize as needed:
+# -Dspectrum.environment=production
+# -Dspectrum.log.dir=/opt/tomcat/logs/spectrum
+# -Djava.awt.headless=true
+
+# Security options
+-Djava.security.egd=file:/dev/./urandom
+
+# Encoding
+-Dfile.encoding=UTF-8
+
+# JMX (optional - uncomment if needed)
+# -Dcom.sun.management.jmxremote
+# -Dcom.sun.management.jmxremote.port=9999
+# -Dcom.sun.management.jmxremote.authenticate=false
+# -Dcom.sun.management.jmxremote.ssl=false
+

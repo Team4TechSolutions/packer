@@ -1,0 +1,19 @@
+# Environment-specific variable files (may contain sensitive data)
+*.hcl
+!ubuntu.pkr.hcl
+
+# Or be more specific and only ignore files with sensitive data:
+# ca-central-1.hcl
+# sandbox.hcl
+# production.hcl
+# staging.hcl
+# dev.hcl
+
+# Packer build artifacts
+*.log
+packer_cache/
+
+# Temporary files
+*.tmp
+.DS_Store
+
