@@ -1,89 +1,138 @@
 # Packer Spectrum AMI Builder
 
-A modular Packer configuration to build AWS AMIs with Spectrum application, Tomcat, and Docker pre-installed. This setup follows industry best practices with proper template separation, modular scripts, and CI/CD support.
+A modular Packer configuration to build AWS AMIs with Spectrum application, Tomcat, and Java pre-installed. This project supports both **Linux (Ubuntu)** and **Windows Server** platforms with a clean, organized structure following industry best practices.
 
 ## 📚 Documentation
 
 - **[SETUP-GUIDE.md](SETUP-GUIDE.md)** - Detailed guide explaining each file, what it does, and what information you need to provide.
+- **[packer/PARAMETER-STORE-SETUP.md](packer/PARAMETER-STORE-SETUP.md)** - Guide for setting up AWS Parameter Store for secure credential storage.
+- **[packer/linux/ubuntu/README.md](packer/linux/ubuntu/README.md)** - Linux/Ubuntu-specific documentation.
+- **[packer/windows/README.md](packer/windows/README.md)** - Windows-specific documentation.
 
-## 📁 Directory Structure
+## 📁 Project Structure
 
 ```
 packer-spectrum/
-├── packer/
-│   ├── ubuntu.pkr.hcl              # Main Packer template (HCL)
-│   ├── variables.pkr.hcl           # Variable definitions
-│   ├── Makefile                    # Utility commands (build/validate/fmt)
-│   ├── VERSION                     # Version metadata for traceability
-│   ├── sandbox.hcl                 # Environment-specific variables
+├── packer/                           # Main Packer configuration directory
+│   ├── Makefile                      # Root-level build orchestrator
+│   ├── VERSION                       # Version metadata for traceability
+│   ├── PARAMETER-STORE-SETUP.md     # AWS Parameter Store setup guide
+│   ├── WINDOWS-SETUP.md              # Windows deployment guide
 │   │
-│   ├── scripts/                    # Modular provisioning steps
-│   │   ├── 00-install-dependencies.sh   # unzip, wget, net-tools, etc.
-│   │   ├── 01-install-docker.sh         # Optional: docker for testing
-│   │   ├── 02-install-java.sh           # Install OpenJDK 17
-│   │   ├── 03-install-tomcat.sh         # Install Tomcat 10.1.x
-│   │   ├── 04-install-spectrum.sh       # Install Spectrum backend + frontend
-│   │   ├── 05-configure-tomcat.sh       # JVM, systemd, logging, catalina settings
-│   │   ├── 06-configure-spectrum.sh     # appConfig.js, API URL, feature flags
-│   │   ├── 07-hardening.sh              # OS hardening (optional)
-│   │   └── 99-cleanup.sh                # Cleanup before AMI creation
+│   ├── linux/                        # Linux distributions
+│   │   └── ubuntu/                   # Ubuntu-specific configuration
+│   │       ├── ubuntu.pkr.hcl        # Main Packer template for Ubuntu
+│   │       ├── sandbox.hcl           # Environment-specific variables
+│   │       ├── Makefile              # Ubuntu build commands
+│   │       ├── README.md              # Ubuntu-specific documentation
+│   │       │
+│   │       ├── scripts/               # Modular provisioning scripts
+│   │       │   ├── 00-install-dependencies.sh
+│   │       │   ├── 01-install-docker.sh
+│   │       │   ├── 02-install-java.sh
+│   │       │   ├── 03-install-tomcat.sh
+│   │       │   ├── 04-install-spectrum.sh
+│   │       │   ├── 05-configure-tomcat.sh
+│   │       │   ├── 06-configure-spectrum.sh
+│   │       │   ├── 07-hardening.sh
+│   │       │   └── 99-cleanup.sh
+│   │       │
+│   │       ├── files/                # Static assets and templates
+│   │       │   ├── templates/       # Configuration templates
+│   │       │   │   ├── appConfig.js.tpl
+│   │       │   │   ├── context.xml.tpl
+│   │       │   │   ├── setenv.sh.tpl
+│   │       │   │   └── tomcat.service
+│   │       │   └── conf/            # Tomcat configuration overrides
+│   │       │
+│   │       └── userdata/            # EC2 user data scripts
 │   │
-│   ├── files/                      # Static assets included in the AMI
-│   │   ├── templates/               # Template files rendered by Packer
-│   │   │   ├── appConfig.js.tpl       # Spectrum frontend config template
-│   │   │   ├── context.xml.tpl         # JNDI DB connection template
-│   │   │   ├── setenv.sh.tpl          # JVM tuning template
-│   │   │   └── tomcat.service        # Systemd service template
-│   │   │
-│   │   ├── conf/                    # Optional Tomcat override configs
-│   │   │   ├── logging.properties
-│   │   │   ├── catalina.properties
-│   │   │   └── jvm.options
-│   │   │
-│   │   ├── spectrum/                # Optional pre-bundled Spectrum files
-│   │   │   ├── spectrum-server.war
-│   │   │   └── client/
-│   │   │
-│   │   └── jdbc/                    # Optional pre-bundled JDBC drivers
-│   │       ├── mysql-connector-java.jar
-│   │       └── mssql-jdbc-driver.jar
-│   │
-│   └── userdata/
-│       └── firstboot.sh            # Optional first-boot configuration
+│   └── windows/                      # Windows Server configuration
+│       ├── windows.pkr.hcl           # Main Packer template for Windows
+│       ├── sandbox.hcl               # Environment-specific variables
+│       ├── Makefile                  # Windows build commands
+│       ├── README.md                 # Windows-specific documentation
+│       │
+│       ├── scripts/                  # PowerShell provisioning scripts
+│       │   ├── 00-Install-Dependencies.ps1
+│       │   ├── 01-Install-Java.ps1
+│       │   ├── 02-Install-Tomcat.ps1
+│       │   ├── 03-Install-Spectrum.ps1
+│       │   ├── 04-Configure-Tomcat.ps1
+│       │   ├── 05-Configure-Spectrum.ps1
+│       │   ├── 06-Hardening.ps1
+│       │   └── 99-Cleanup.ps1
+│       │
+│       ├── files/                    # Static assets and templates
+│       │   └── templates/           # Configuration templates
+│       │       ├── appConfig.js.tpl
+│       │       ├── context.xml.tpl
+│       │       └── setenv.bat.tpl
+│       │
+│       └── userdata/                 # EC2 user data scripts
+│           └── windows-userdata.ps1
 │
-└── README.md                       # This file
+├── README.md                         # This file
+└── SETUP-GUIDE.md                    # Detailed setup guide
 ```
 
 ## ✨ Key Features
 
+- ✅ **Multi-Platform Support** - Build AMIs for both Linux (Ubuntu) and Windows Server
 - ✅ **Modular Scripts** - Each script has a single responsibility
 - ✅ **Template-Based Configuration** - Avoids hard-coded sed operations
 - ✅ **Separated Concerns** - Tomcat and Spectrum configuration are separate
 - ✅ **Version Tracking** - VERSION file for AMI build traceability
 - ✅ **CI/CD Ready** - Makefile with standard commands
 - ✅ **Environment-Specific** - Easy switching between environments (sandbox, production, etc.)
-- ✅ **Tomcat Overrides** - Custom configuration files for logging, JVM, etc.
+- ✅ **Secure Credential Storage** - AWS Parameter Store integration for sensitive data
+- ✅ **S3 Support** - Download Spectrum packages from S3 buckets
+- ✅ **IAM Role-Based Access** - Uses instance profiles for secure S3 access
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Packer installed (>= 1.8.0)
-- AWS credentials configured
-- Access to VPC and subnet for building
+- **Packer** installed (>= 1.8.0)
+- **AWS CLI** configured with appropriate credentials
+- **AWS Parameter Store** parameters created (see [PARAMETER-STORE-SETUP.md](packer/PARAMETER-STORE-SETUP.md))
+- **IAM Permissions**:
+  - EC2: Create instances, AMIs, security groups, key pairs
+  - SSM: Read Parameter Store values
+  - S3: Read from Spectrum package bucket (if using S3)
 
-### 1. Initialize Packer
+### 1. Set Up AWS Parameter Store
+
+Database credentials are stored securely in AWS Parameter Store. Create the required parameters:
 
 ```bash
-cd packer-spectrum/packer
-make init
-# OR
-packer init ubuntu.pkr.hcl
+# Database host
+aws ssm put-parameter \
+  --name "/spectrum/sandbox/db-host" \
+  --value "your-db-host.example.com" \
+  --type "String" \
+  --region ca-central-1
+
+# Database user
+aws ssm put-parameter \
+  --name "/spectrum/sandbox/db-user" \
+  --value "admin" \
+  --type "String" \
+  --region ca-central-1
+
+# Database password (SecureString - encrypted)
+aws ssm put-parameter \
+  --name "/spectrum/sandbox/db-password" \
+  --value "your-password" \
+  --type "SecureString" \
+  --region ca-central-1
 ```
+
+See [packer/PARAMETER-STORE-SETUP.md](packer/PARAMETER-STORE-SETUP.md) for detailed instructions.
 
 ### 2. Configure Environment
 
-Edit `sandbox.hcl` (or create your own environment file):
+Edit the environment-specific file (e.g., `packer/linux/ubuntu/sandbox.hcl` or `packer/windows/sandbox.hcl`):
 
 ```hcl
 # AWS Infrastructure
@@ -92,15 +141,19 @@ vpc_id = "vpc-xxxxx"
 subnet_id = "subnet-xxxxx"
 account = "123456789012"
 
-# Spectrum Application
-spectrum_version = "5.x.x"
-spectrum_package_url = "https://example.com/SpectrumV5.x.x.zip"
+# IAM Instance Profile for S3 access
+iam_instance_profile_name = "packer-s3-role"
 
-# Database Configuration
-db_type = "mysql"  # or "sqlserver"
-db_host = "your-db-host.example.com"
-db_user = "spectrum"
-db_password = "your-password"
+# Spectrum Application
+spectrum_version = "5.9.0"
+spectrum_s3_bucket = "warfilefortestspectrum"
+spectrum_s3_path = "5.9.0"
+
+# Database Configuration (from Parameter Store)
+ssm_db_host_path = "/spectrum/sandbox/db-host"
+ssm_db_user_path = "/spectrum/sandbox/db-user"
+ssm_db_password_path = "/spectrum/sandbox/db-password"
+db_type = "mysql"
 db_name = "kioskmgr"
 
 # Server Configuration
@@ -111,143 +164,94 @@ jvm_xms = "1g"
 
 ### 3. Build AMI
 
-**Using Makefile (Recommended):**
-```bash
-make build ENV_FILE=sandbox.hcl
-```
+#### For Linux (Ubuntu):
 
-**Or using Packer directly:**
 ```bash
+cd packer/linux/ubuntu
+make build
+# OR
 packer build -var-file=sandbox.hcl ubuntu.pkr.hcl
 ```
 
-## 🛠️ Makefile Commands
+#### For Windows:
 
-The Makefile provides convenient commands for common tasks:
+```bash
+cd packer/windows
+make build
+# OR
+packer build -var-file=sandbox.hcl windows.pkr.hcl
+```
+
+## 🛠️ Build Commands
+
+Each platform has its own Makefile with convenient commands:
+
+### Linux/Ubuntu (`packer/linux/ubuntu/`)
 
 ```bash
 make help              # Show available commands
-make init              # Initialize Packer plugins
 make validate          # Validate Packer configuration
 make fmt               # Format Packer HCL files
-make build             # Build AMI (requires ENV_FILE)
-make clean             # Clean Packer cache
-make version           # Show current version
-make update-version    # Update version (make update-version VERSION=1.0.1)
+make build             # Build Ubuntu AMI
+make clean             # Clean build artifacts
 ```
 
-### CI/CD Targets
+### Windows (`packer/windows/`)
 
 ```bash
-make ci-validate       # CI: Validate configuration
-make ci-build          # CI: Build AMI
+make help              # Show available commands
+make validate          # Validate Packer configuration
+make fmt               # Format Packer HCL files
+make build             # Build Windows AMI
+make clean             # Clean build artifacts
 ```
 
-## 📋 Scripts Overview
+## 📋 What Gets Installed
 
-### 00-install-dependencies.sh
-Installs basic system dependencies (wget, curl, unzip, etc.)
+### Linux (Ubuntu)
+1. **System Dependencies**: wget, curl, unzip, AWS CLI v2
+2. **Docker**: Docker Engine (optional)
+3. **Java**: OpenJDK 17
+4. **Tomcat**: Apache Tomcat 10.1.20 (as systemd service)
+5. **Spectrum Application**: Backend WAR + Frontend static files
+6. **JDBC Drivers**: MySQL or SQL Server connector
+7. **Configuration**: Database connection, JVM settings, firewall rules
 
-### 01-install-docker.sh
-Installs Docker Engine, CLI, and Docker Compose
+### Windows Server
+1. **System Tools**: Chocolatey, Git, curl, unzip, AWS CLI v2
+2. **Java**: OpenJDK 17 (via Chocolatey)
+3. **Tomcat**: Apache Tomcat 10.1.20 (as Windows Service)
+4. **Spectrum Application**: Backend WAR + Frontend static files
+5. **JDBC Drivers**: MySQL or SQL Server connector
+6. **Configuration**: Database connection, JVM settings, firewall rules
 
-### 02-install-java.sh
-Installs OpenJDK 17 and configures JAVA_HOME
+## 🔐 Security Features
 
-### 03-install-tomcat.sh
-Downloads and installs Apache Tomcat 10.1.x
+- **AWS Parameter Store Integration** - Database credentials stored securely (not in git)
+- **IAM Instance Profiles** - S3 access via IAM roles (no hardcoded credentials)
+- **SecureString Parameters** - Encrypted password storage in Parameter Store
+- **Security Hardening** - Default Tomcat apps removed, firewall configured
+- **Encrypted Boot Volumes** - AMI boot volumes are encrypted
 
-### 04-install-spectrum.sh
-Deploys Spectrum backend (WAR) and frontend applications
+## 📦 Spectrum Package Sources
 
-### 05-configure-tomcat.sh
-Configures Tomcat-specific settings:
-- JVM parameters (setenv.sh)
-- Systemd service
-- Firewall rules
-- Tomcat configuration overrides (from files/conf/)
+The build supports three methods for obtaining the Spectrum package:
 
-### 06-configure-spectrum.sh
-Configures Spectrum-specific settings:
-- JDBC driver installation (MySQL or SQL Server)
-- Database connection in context.xml
-- Frontend appConfig.js configuration
+1. **S3 Bucket** (recommended):
+   ```hcl
+   spectrum_s3_bucket = "warfilefortestspectrum"
+   spectrum_s3_path = "5.9.0"
+   ```
 
-### 07-hardening.sh
-Applies security hardening (file limits, process limits)
+2. **HTTP/HTTPS URL**:
+   ```hcl
+   spectrum_package_url = "https://example.com/SpectrumV5.9.0.zip"
+   ```
 
-### 99-cleanup.sh
-Cleans up temporary files before AMI finalization
-
-## 📄 Template Files
-
-Templates are used to avoid hard-coded configuration:
-
-### `files/templates/appConfig.js.tpl`
-Spectrum frontend configuration template with placeholders for server IP.
-
-### `files/templates/context.xml.tpl`
-Database connection template with placeholders for DB credentials.
-
-### `files/templates/setenv.sh.tpl`
-JVM tuning template with placeholders for heap sizes.
-
-### `files/templates/tomcat.service`
-Systemd service file for Tomcat.
-
-## ⚙️ Configuration Files
-
-### `files/conf/logging.properties`
-Custom Tomcat logging configuration. Modify to change log levels, handlers, etc.
-
-### `files/conf/catalina.properties`
-Tomcat Catalina properties override. Add custom properties here.
-
-### `files/conf/jvm.options`
-Additional JVM options. Add custom JVM flags here.
-
-## 🔐 Variable Configuration
-
-Variables are defined in `variables.pkr.hcl` and values come from environment files (e.g., `sandbox.hcl`).
-
-### Required Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `region` | AWS region | `"ca-central-1"` |
-| `vpc_id` | VPC ID | `"vpc-xxxxx"` |
-| `subnet_id` | Subnet ID | `"subnet-xxxxx"` |
-| `account` | AWS account ID | `"123456789012"` |
-| `spectrum_package_url` | Spectrum package URL | `"https://..."` |
-| `db_host` | Database hostname | `"db.example.com"` |
-| `db_password` | Database password | `"password"` |
-| `server_ip` | Server IP/hostname | `"server.example.com"` |
-
-### Optional Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `spectrum_version` | Spectrum version | `"5.x.x"` |
-| `db_type` | Database type | `"mysql"` |
-| `db_user` | Database user | `"spectrum"` |
-| `db_name` | Database name | `"kioskmgr"` |
-| `jvm_xmx` | JVM max heap | `"2g"` |
-| `jvm_xms` | JVM initial heap | `"1g"` |
-
-## 📝 Version Management
-
-The `VERSION` file tracks AMI builds:
-
-```
-VERSION=1.0.0
-BUILD_DATE=2025-12-02
-BUILD_ENV=sandbox
-```
-
-Update version for each build:
-```bash
-make update-version VERSION=1.0.1
-```
+3. **Local Path**:
+   ```hcl
+   spectrum_package_path = "/path/to/SpectrumV5.9.0.zip"
+   ```
 
 ## 🌍 Environment Files
 
@@ -257,102 +261,135 @@ Create environment-specific variable files for different environments:
 - `production.hcl` - Production environment
 - `staging.hcl` - Staging environment
 
-Each file contains environment-specific values (VPC, subnet, database, etc.).
+Each file contains environment-specific values (VPC, subnet, Parameter Store paths, etc.).
 
 ## 🔄 Build Process
 
-1. **Initialize** - `make init` - Downloads Packer plugins
-2. **Validate** - `make validate ENV_FILE=sandbox.hcl` - Validates configuration
-3. **Build** - `make build ENV_FILE=sandbox.hcl` - Builds AMI
-4. **Result** - AMI ID is displayed and saved to `manifest.json`
+### Linux Build Process:
+1. Launch EC2 instance (Ubuntu 22.04 LTS)
+2. Install system dependencies
+3. Install Docker (optional)
+4. Install Java 17
+5. Install Tomcat 10.1.20
+6. Deploy Spectrum applications
+7. Configure Tomcat (JVM, systemd, logging)
+8. Configure Spectrum (JDBC, database, frontend)
+9. Security hardening
+10. Cleanup
+11. Create AMI
+
+### Windows Build Process:
+1. Launch EC2 instance (Windows Server 2022)
+2. Configure WinRM for Packer communication
+3. Install Chocolatey and system tools
+4. Install Java 17
+5. Install Tomcat 10.1.20
+6. Deploy Spectrum applications
+7. Configure Tomcat (JVM, Windows Service, firewall)
+8. Configure Spectrum (JDBC, database, frontend)
+9. Security hardening
+10. Cleanup
+11. Create AMI
+
+## 📝 Version Management
+
+The `VERSION` file tracks AMI builds:
+
+```
+VERSION=1.0.0
+BUILD_DATE=2025-12-03
+BUILD_ENV=sandbox
+```
 
 ## 📦 Post-Deployment
 
 After launching an instance from the AMI:
 
-1. **Verify Services:**
-   ```bash
-   sudo systemctl status tomcat
-   ```
+### Linux:
+```bash
+# Verify Tomcat service
+sudo systemctl status tomcat10
 
-2. **Check Logs:**
-   ```bash
-   sudo tail -f /opt/tomcat/logs/catalina.out
-   ```
+# Check logs
+sudo tail -f /opt/tomcat/logs/catalina.out
 
-3. **Access Spectrum:**
-   - Frontend: `http://your-server-ip:8080/spectrum/`
-   - Default credentials: `admin` / `admin`
-   - **Important:** Change default password immediately!
+# Access Spectrum
+# Frontend: http://your-server-ip:8080/spectrum/
+```
 
-4. **Configure Database:**
-   - Ensure database is accessible from the instance
-   - Database should be pre-created with required schema
+### Windows:
+```powershell
+# Verify Tomcat service
+Get-Service Tomcat10
+
+# Check logs
+Get-Content C:\Tomcat10\logs\catalina.out -Tail 50
+
+# Access Spectrum
+# Frontend: http://your-server-ip:8080/spectrum/
+```
 
 ## 🎯 Best Practices
 
-### Template Usage
-- Use templates (`.tpl` files) instead of hard-coded `sed` commands
-- Templates are more maintainable and version-controllable
+### Security
+- ✅ Use AWS Parameter Store for all sensitive credentials
+- ✅ Use IAM instance profiles for S3 access (no hardcoded keys)
+- ✅ Use SecureString type for passwords in Parameter Store
+- ✅ Never commit passwords to version control
 
-### Configuration Separation
-- Tomcat configuration → `05-configure-tomcat.sh`
-- Spectrum configuration → `06-configure-spectrum.sh`
-- Clear separation of concerns
+### Configuration
+- ✅ Use templates (`.tpl` files) instead of hard-coded `sed` commands
+- ✅ Separate environment-specific files (sandbox.hcl, production.hcl)
+- ✅ Update VERSION file for each build
 
-### Version Tracking
-- Update `VERSION` file for each build
-- Track build date and environment
-
-### Environment Management
-- Use separate `.hcl` files for each environment
-- Never commit passwords to version control
-- Use AWS Secrets Manager or environment variables for sensitive data
+### Organization
+- ✅ Platform-specific files in their respective directories
+- ✅ Shared documentation in root `packer/` directory
+- ✅ Each platform has its own Makefile and README
 
 ## 🚨 Important Notes
 
-1. **Database Password:** Never commit passwords to version control. Use:
-   - Environment variables
-   - AWS Secrets Manager
-   - Separate variables file (not in git)
+1. **Database Credentials**: Stored in AWS Parameter Store (not in git). See [PARAMETER-STORE-SETUP.md](packer/PARAMETER-STORE-SETUP.md).
 
-2. **Spectrum Package:** The package must be:
-   - Accessible via URL, OR
-   - Uploaded to build instance before script runs
+2. **IAM Permissions**: The build instance needs:
+   - `ssm:GetParameter` for Parameter Store
+   - `s3:GetObject` and `s3:ListBucket` for S3 bucket access
+   - EC2 permissions for instance creation
 
-3. **Network Access:** Build instance needs:
+3. **Network Access**: Build instance needs:
    - Internet access (to download packages)
-   - SSH access from your machine (for Packer)
+   - SSH/WinRM access from your machine (for Packer)
    - Database access (if database is external)
 
-4. **Default Credentials:** After deployment, Spectrum default login is:
-   - Username: `admin`
-   - Password: `admin`
-   - **CHANGE THIS IMMEDIATELY!**
+4. **Default Credentials**: After deployment, change default Spectrum login credentials immediately!
 
 ## 🐛 Troubleshooting
 
-### Build Fails at SSH Connection
-- Ensure subnet allows SSH from your IP
-- Check security groups
-- Verify `associate_public_ip_address = true` for public subnets
+### Build Fails with "Parameter not found"
+- Ensure Parameter Store parameters exist in the correct region
+- Verify parameter paths in `sandbox.hcl` match actual parameter names
+- Check IAM permissions include `ssm:GetParameter`
 
-### Spectrum Package Not Found
-- Verify `SPECTRUM_PACKAGE_URL` is accessible
-- Or provide `SPECTRUM_PACKAGE_PATH` with absolute path
+### Build Fails with "Access Denied" (S3)
+- Verify IAM instance profile is attached
+- Check IAM role has `s3:GetObject` and `s3:ListBucket` permissions
+- Ensure bucket name and path are correct
 
 ### Database Connection Issues
-- Verify database credentials
+- Verify database credentials in Parameter Store
 - Ensure database is accessible from build instance
-- Check firewall rules
+- Check security groups allow database port (3306 for MySQL, 1433 for SQL Server)
 
 ### Template Not Found
-- Ensure template files are in `files/templates/`
-- Check file provisioner paths in `ubuntu.pkr.hcl`
+- Ensure template files are in `files/templates/` directory
+- Check file provisioner paths in Packer configuration
 
 ## 📞 Additional Resources
 
-- **[SETUP-GUIDE.md](SETUP-GUIDE.md)** - Detailed setup instructions and file explanations
+- **[SETUP-GUIDE.md](SETUP-GUIDE.md)** - Detailed setup instructions
+- **[packer/PARAMETER-STORE-SETUP.md](packer/PARAMETER-STORE-SETUP.md)** - Parameter Store setup guide
+- **[packer/linux/ubuntu/README.md](packer/linux/ubuntu/README.md)** - Ubuntu-specific documentation
+- **[packer/windows/README.md](packer/windows/README.md)** - Windows-specific documentation
 - [Packer Documentation](https://www.packer.io/docs)
 - [Apache Tomcat Documentation](https://tomcat.apache.org/tomcat-10.1-doc/)
 
@@ -362,5 +399,5 @@ After launching an instance from the AMI:
 
 ---
 
-**Last Updated:** 2025-12-02  
+**Last Updated:** 2025-12-03  
 **Version:** 1.0.0

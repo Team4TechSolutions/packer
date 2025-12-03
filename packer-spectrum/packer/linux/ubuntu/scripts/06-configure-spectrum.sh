@@ -51,7 +51,8 @@ if [ "$DB_TYPE" = "sqlserver" ]; then
     DB_URL="jdbc:sqlserver://${DB_HOST}:1433;databaseName=${DB_NAME};encrypt=false"
     DB_DRIVER="com.microsoft.sqlserver.jdbc.SQLServerDriver"
 elif [ "$DB_TYPE" = "mysql" ]; then
-    DB_URL="jdbc:mysql://${DB_HOST}:3306/${DB_NAME}?useSSL=false&serverTimezone=UTC"
+    # Escape & for XML - use &amp; instead of &
+    DB_URL="jdbc:mysql://${DB_HOST}:3306/${DB_NAME}?useSSL=false&amp;serverTimezone=UTC"
     DB_DRIVER="com.mysql.cj.jdbc.Driver"
 fi
 
@@ -63,7 +64,9 @@ if [ -f "/tmp/context.xml.tpl" ]; then
     
     # Replace entire context.xml with template (simpler approach)
     # Use perl for better handling of special characters in URLs
-    sudo perl -pe "s|{{DB_USER}}|${DB_USER}|g; s|{{DB_PASSWORD}}|${DB_PASSWORD}|g; s|{{DB_DRIVER}}|${DB_DRIVER}|g; s|{{DB_URL}}|${DB_URL}|g" \
+    # Escape & to &amp; for XML compatibility
+    DB_URL_ESCAPED=$(echo "$DB_URL" | perl -pe 's/&/&amp;/g')
+    sudo perl -pe "s|{{DB_USER}}|${DB_USER}|g; s|{{DB_PASSWORD}}|${DB_PASSWORD}|g; s|{{DB_DRIVER}}|${DB_DRIVER}|g; s|{{DB_URL}}|${DB_URL_ESCAPED}|g" \
         /tmp/context.xml.tpl | sudo tee $TOMCAT_HOME/conf/context.xml > /dev/null
 else
     # Fallback to sed method

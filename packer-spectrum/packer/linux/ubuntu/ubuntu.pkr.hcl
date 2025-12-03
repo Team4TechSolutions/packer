@@ -48,6 +48,24 @@ variable "spectrum_package_path" {
   description = "Local path to Spectrum package (optional if using URL)"
 }
 
+variable "spectrum_s3_bucket" {
+  type        = string
+  default     = ""
+  description = "S3 bucket name for Spectrum package (optional)"
+}
+
+variable "spectrum_s3_path" {
+  type        = string
+  default     = ""
+  description = "S3 path/prefix for Spectrum package (optional)"
+}
+
+variable "iam_instance_profile_name" {
+  type        = string
+  default     = ""
+  description = "IAM instance profile name for S3 access during build"
+}
+
 variable "db_type" {
   type        = string
   default     = "mysql"
@@ -60,27 +78,47 @@ variable "db_type" {
 
 variable "db_host" {
   type        = string
-  default     = "localhost"
-  description = "Database server hostname or IP address"
+  default     = ""
+  description = "Database server hostname or IP address (optional if using Parameter Store)"
 }
 
 variable "db_user" {
   type        = string
-  default     = "spectrum"
-  description = "Database username"
+  default     = ""
+  description = "Database username (optional if using Parameter Store)"
 }
 
 variable "db_password" {
   type        = string
   default     = ""
   sensitive   = true
-  description = "Database password"
+  description = "Database password (optional if using Parameter Store)"
 }
 
 variable "db_name" {
   type        = string
   default     = "kioskmgr"
   description = "Database name"
+}
+
+# Parameter Store paths for sensitive database credentials
+variable "ssm_db_host_path" {
+  type        = string
+  default     = ""
+  description = "AWS SSM Parameter Store path for database host (e.g., /spectrum/sandbox/db-host)"
+}
+
+variable "ssm_db_user_path" {
+  type        = string
+  default     = ""
+  description = "AWS SSM Parameter Store path for database user (e.g., /spectrum/sandbox/db-user)"
+}
+
+variable "ssm_db_password_path" {
+  type        = string
+  default     = ""
+  sensitive   = true
+  description = "AWS SSM Parameter Store path for database password (e.g., /spectrum/sandbox/db-password)"
 }
 
 variable "server_ip" {
@@ -101,8 +139,29 @@ variable "jvm_xms" {
   description = "JVM initial heap size (e.g., 1g, 2g, 4g)"
 }
 
+# Data sources for AWS Parameter Store
+# Only attempt to read from Parameter Store if paths are provided
+data "amazon-parameterstore" "db_host" {
+  name = var.ssm_db_host_path != "" ? var.ssm_db_host_path : "/spectrum/not-used/db-host"
+}
+
+data "amazon-parameterstore" "db_user" {
+  name = var.ssm_db_user_path != "" ? var.ssm_db_user_path : "/spectrum/not-used/db-user"
+}
+
+data "amazon-parameterstore" "db_password" {
+  name = var.ssm_db_password_path != "" ? var.ssm_db_password_path : "/spectrum/not-used/db-password"
+}
+
 locals {
   timestamp = regex_replace(timestamp(), "[- TZ:]", "")
+  instance_profile_name = var.iam_instance_profile_name != "" ? var.iam_instance_profile_name : null
+  
+  # Use Parameter Store values if paths are provided, otherwise fall back to variables
+  # Only use data source value if the path variable is actually set
+  db_host = var.ssm_db_host_path != "" ? try(data.amazon-parameterstore.db_host.value, var.db_host != "" ? var.db_host : "localhost") : (var.db_host != "" ? var.db_host : "localhost")
+  db_user = var.ssm_db_user_path != "" ? try(data.amazon-parameterstore.db_user.value, var.db_user != "" ? var.db_user : "spectrum") : (var.db_user != "" ? var.db_user : "spectrum")
+  db_password = var.ssm_db_password_path != "" ? try(data.amazon-parameterstore.db_password.value, var.db_password) : var.db_password
 }
 
 source "amazon-ebs" "ubuntu" {
@@ -126,6 +185,10 @@ source "amazon-ebs" "ubuntu" {
   subnet_id                   = var.subnet_id
   associate_public_ip_address = true
   encrypt_boot                = true
+  
+  # IAM instance profile for S3 access during build
+  # The instance will use this role's credentials via instance metadata service
+  iam_instance_profile = local.instance_profile_name
 }
 
 build {
@@ -207,9 +270,9 @@ build {
     script = "./scripts/06-configure-spectrum.sh"
     environment_vars = [
       "DB_TYPE=${var.db_type}",
-      "DB_HOST=${var.db_host}",
-      "DB_USER=${var.db_user}",
-      "DB_PASSWORD=${var.db_password}",
+      "DB_HOST=${local.db_host}",
+      "DB_USER=${local.db_user}",
+      "DB_PASSWORD=${local.db_password}",
       "DB_NAME=${var.db_name}",
       "SERVER_IP=${var.server_ip}",
     ]
