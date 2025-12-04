@@ -23,8 +23,6 @@ Thumbs.db
 *.key
 *.env
 secrets/
-# Environment-specific configs with sensitive data
-*sandbox*.hcl
-*production*.hcl
-*staging*.hcl
+# Note: sandbox.hcl, production.hcl, staging.hcl files are now tracked
+# because they use AWS Parameter Store for sensitive data (no credentials in files)
 
